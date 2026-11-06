@@ -65,11 +65,31 @@ jobs:
           --exclude vpn-service --exclude vpn-desktop
           --fail-under-lines 100
           --lcov --output-path lcov.info
+      - name: coverage summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (-not (Test-Path lcov.info)) { Write-Host "lcov.info not found"; exit 0 }
+          $lf = 0; $lh = 0; $file = $null; $missed = @()
+          foreach ($line in Get-Content lcov.info) {
+            if ($line -match '^SF:(.+)$') { $file = $Matches[1] }
+            elseif ($line -match '^LF:(\d+)') { $lf += [int]$Matches[1] }
+            elseif ($line -match '^LH:(\d+)') { $lh += [int]$Matches[1] }
+            elseif ($line -match '^DA:(\d+),0$') { $missed += "$file`:$($Matches[1])" }
+          }
+          $pct = if ($lf -gt 0) { [math]::Round(100.0 * $lh / $lf, 2) } else { 0 }
+          Write-Host "coverage: $lh / $lf lines = $pct%"
+          Write-Host "uncovered lines (first 80):"
+          $missed | Select-Object -First 80
+          "coverage=$pct%" | Out-File -FilePath coverage-summary.txt -Encoding utf8
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: coverage-lcov
-          path: lcov.info
-          if-no-files-found: error
+          name: coverage-report
+          path: |
+            lcov.info
+            coverage-summary.txt
+          if-no-files-found: warn
 
   docs:
     name: docs
@@ -107,7 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install MSRV toolchain
-        run: rustup toolchain install 1.80.0 --profile minimal
+        run: rustup toolchain install 1.85.0 --profile minimal
       - uses: Swatinem/rust-cache@v2
       - name: check on MSRV
-        run: cargo +1.80.0 check --workspace
+        run: cargo +1.85.0 check --workspace
