@@ -68,7 +68,8 @@ jobs:
       - name: coverage summary
         if: always()
         shell: pwsh
-        run: |          if (-not (Test-Path lcov.info)) { Write-Host "lcov.info not found"; exit 0 }
+        run: |
+          if (-not (Test-Path lcov.info)) { Write-Host "lcov.info not found"; exit 0 }
           $lf = 0; $lh = 0; $file = $null; $missed = @()
           foreach ($line in Get-Content lcov.info) {
             $line = $line.Trim()
