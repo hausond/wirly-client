@@ -384,6 +384,9 @@ mod tests {
     fn uses_fallback_name_when_fragment_missing() {
         let profile = parse_uri("vless://u@1.2.3.4:443?security=tls").unwrap();
         assert_eq!(profile.name, "vless-1.2.3.4");
+
+        let profile = parse_uri("trojan://pw@example.com:443#").unwrap();
+        assert_eq!(profile.name, "trojan-example.com");
     }
 
     #[test]
@@ -419,5 +422,11 @@ mod tests {
         }
         let payload = base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pass");
         assert!(parse_uri(&format!("ss://{payload}@:443")).is_err());
+    }
+
+    #[test]
+    fn rejects_base64_that_is_not_utf8() {
+        // 0x80 is a valid base64 payload but not valid UTF-8.
+        assert!(decode_base64("gA==").is_err());
     }
 }
