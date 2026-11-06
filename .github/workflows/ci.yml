@@ -68,8 +68,7 @@ jobs:
       - name: coverage summary
         if: always()
         shell: pwsh
-        run: |
-          if (-not (Test-Path lcov.info)) { Write-Host "lcov.info not found"; exit 0 }
+        run: |          if (-not (Test-Path lcov.info)) { Write-Host "lcov.info not found"; exit 0 }
           $lf = 0; $lh = 0; $file = $null; $missed = @()
           foreach ($line in Get-Content lcov.info) {
             $line = $line.Trim()
@@ -83,6 +82,10 @@ jobs:
           Write-Host "uncovered lines (first 80):"
           $missed | Select-Object -First 80
           "coverage=$pct%" | Out-File -FilePath coverage-summary.txt -Encoding utf8
+      - name: uncovered lines (text report)
+        if: failure()
+        shell: pwsh
+        run: cargo llvm-cov report --text | Select-String -Pattern '^\s*0\|' | Select-Object -First 80
       - uses: actions/upload-artifact@v4
         if: always()
         with:

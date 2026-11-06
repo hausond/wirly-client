@@ -387,4 +387,36 @@ mod tests {
             Err(ConfigError::MissingField(_))
         ));
     }
+
+    #[test]
+    fn uses_fallback_name_when_fragment_missing() {
+        let profile = parse_uri("vless://u@1.2.3.4:443?security=tls").unwrap();
+        assert_eq!(profile.name, "vless-1.2.3.4");
+    }
+
+    #[test]
+    fn rejects_legacy_ss_without_at_sign() {
+        let payload = base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pass");
+        assert!(matches!(
+            parse_uri(&format!("ss://{payload}#x")),
+            Err(ConfigError::MissingField("method:password@host:port"))
+        ));
+    }
+
+    #[test]
+    fn rejects_missing_ports_for_each_protocol() {
+        assert!(matches!(
+            parse_uri("trojan://pw@example.com"),
+            Err(ConfigError::MissingField("port"))
+        ));
+        let payload = base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pass");
+        assert!(matches!(
+            parse_uri(&format!("ss://{payload}@example.com")),
+            Err(ConfigError::MissingField("port"))
+        ));
+        assert!(matches!(
+            parse_uri("hysteria2://pw@example.com"),
+            Err(ConfigError::MissingField("port"))
+        ));
+    }
 }
