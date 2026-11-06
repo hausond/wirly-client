@@ -236,6 +236,7 @@ mod tests {
             path: None,
         });
         assert!(trojan.as_trojan().is_some());
+        assert!(trojan.as_vless().is_none());
 
         let ss = ProtocolConfig::Shadowsocks(ShadowsocksConfig {
             address: "a".into(),
