@@ -8,3 +8,6 @@ license.workspace = true
 vpn-config = { path = "../vpn-config" }
 vpn-core = { path = "../vpn-core" }
 serde.workspace = true
+
+[lints]
+workspace = true

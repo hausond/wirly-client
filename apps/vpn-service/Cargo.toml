@@ -10,3 +10,6 @@ vpn-routing = { path = "../../crates/vpn-routing" }
 vpn-core = { path = "../../crates/vpn-core" }
 vpn-dns = { path = "../../crates/vpn-dns" }
 anyhow.workspace = true
+
+[lints]
+workspace = true

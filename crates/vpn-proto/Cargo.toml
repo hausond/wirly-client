@@ -9,3 +9,6 @@ vpn-config = { path = "../vpn-config" }
 thiserror.workspace = true
 tokio.workspace = true
 async-trait.workspace = true
+
+[lints]
+workspace = true

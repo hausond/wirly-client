@@ -259,4 +259,101 @@ mod tests {
             Err(RoutingError::InvalidCidr(_, _))
         ));
     }
+
+    #[test]
+    fn given_matched_rule_then_reason_names_it() {
+        let e = engine();
+        let ip: IpAddr = "142.250.1.1".parse().unwrap();
+        let decision = e.decide(&ConnectionInfo::tcp(ip, 443).with_domain("youtube.com"));
+        assert_eq!(decision.reason(), "rule #0");
+        let default = e.decide(&ConnectionInfo::tcp(ip, 443).with_domain("other.example"));
+        assert_eq!(default.reason(), "preset default");
+    }
+
+    #[test]
+    fn given_exact_and_keyword_modes_then_only_matching_domains_match() {
+        let preset = Preset {
+            name: "modes".into(),
+            description: String::new(),
+            default_action: Action::Block,
+            rules: vec![
+                Rule {
+                    matcher: Matcher::Domain {
+                        value: "exact.example".into(),
+                        mode: DomainMode::Exact,
+                    },
+                    action: Action::Direct,
+                    note: None,
+                },
+                Rule {
+                    matcher: Matcher::Domain {
+                        value: "keyword".into(),
+                        mode: DomainMode::Keyword,
+                    },
+                    action: Action::Proxy("kw".into()),
+                    note: None,
+                },
+            ],
+        };
+        let e = RoutingEngine::new(&preset).unwrap();
+        let ip: IpAddr = "1.1.1.1".parse().unwrap();
+        assert_eq!(
+            e.decide(&ConnectionInfo::tcp(ip, 443).with_domain("exact.example"))
+                .action,
+            Action::Direct
+        );
+        assert_eq!(
+            e.decide(&ConnectionInfo::tcp(ip, 443).with_domain("sub.exact.example"))
+                .action,
+            Action::Block
+        );
+        assert_eq!(
+            e.decide(&ConnectionInfo::tcp(ip, 443).with_domain("my-keyword-host.net"))
+                .action,
+            Action::Proxy("kw".into())
+        );
+    }
+
+    #[test]
+    fn given_any_matcher_then_matches_everything() {
+        let preset = Preset {
+            name: "any".into(),
+            description: String::new(),
+            default_action: Action::Block,
+            rules: vec![Rule {
+                matcher: Matcher::Any,
+                action: Action::Direct,
+                note: Some("catch-all".into()),
+            }],
+        };
+        let e = RoutingEngine::new(&preset).unwrap();
+        let ip: IpAddr = "1.2.3.4".parse().unwrap();
+        assert_eq!(e.decide(&ConnectionInfo::tcp(ip, 1)).action, Action::Direct);
+    }
+
+    #[test]
+    fn given_process_mismatch_then_default_applies() {
+        let e = engine();
+        let ip: IpAddr = "8.8.8.8".parse().unwrap();
+        assert_eq!(
+            e.decide(&ConnectionInfo::tcp(ip, 443).with_process("chrome.exe"))
+                .action,
+            Action::Proxy("default".into())
+        );
+    }
+
+    #[test]
+    fn action_helpers() {
+        assert!(Action::Proxy("x".into()).is_proxy());
+        assert!(!Action::Direct.is_proxy());
+        assert!(!Action::Block.is_proxy());
+    }
+
+    #[test]
+    fn preset_json_roundtrip() {
+        let preset = Preset::from_json(PRESET).unwrap();
+        let json = preset.to_json().unwrap();
+        let again = Preset::from_json(&json).unwrap();
+        assert_eq!(preset, again);
+    }
 }

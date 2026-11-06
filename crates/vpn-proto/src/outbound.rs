@@ -53,3 +53,86 @@ pub fn create(profile: &Profile) -> Result<Box<dyn Outbound>, ProtoError> {
         ProtocolConfig::Tuic(_) => Box::new(StubOutbound::new(name, "tuic")),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vpn_config::{
+        Hysteria2Config, ShadowsocksConfig, TrojanConfig, TuicConfig, VlessConfig, WireGuardConfig,
+    };
+
+    fn profile(protocol: ProtocolConfig) -> Profile {
+        Profile::new("test", protocol)
+    }
+
+    fn vless() -> ProtocolConfig {
+        ProtocolConfig::Vless(VlessConfig {
+            address: "127.0.0.1".into(),
+            port: 443,
+            uuid: "u".into(),
+            flow: None,
+            network: vpn_config::Transport::Ws,
+            security: vpn_config::Security::Tls,
+            sni: None,
+            host: None,
+            path: None,
+            public_key: None,
+            short_id: None,
+            fingerprint: None,
+        })
+    }
+
+    #[test]
+    fn given_each_protocol_when_creating_outbound_then_name_is_prefixed() {
+        let cases = vec![
+            ProtocolConfig::WireGuard(WireGuardConfig {
+                endpoint: "e".into(),
+                port: 1,
+                private_key: "k".into(),
+                peer_public_key: "p".into(),
+                preshared_key: None,
+                address: "10.0.0.2/32".into(),
+                dns: None,
+                mtu: None,
+            }),
+            ProtocolConfig::Shadowsocks(ShadowsocksConfig {
+                address: "a".into(),
+                port: 1,
+                method: "m".into(),
+                password: "p".into(),
+            }),
+            ProtocolConfig::Trojan(TrojanConfig {
+                address: "a".into(),
+                port: 1,
+                password: "p".into(),
+                sni: None,
+                network: vpn_config::Transport::Tcp,
+                path: None,
+            }),
+            vless(),
+            ProtocolConfig::Hysteria2(Hysteria2Config {
+                address: "a".into(),
+                port: 1,
+                password: "p".into(),
+                sni: None,
+                obfs: None,
+                obfs_password: None,
+                insecure: false,
+            }),
+            ProtocolConfig::Tuic(TuicConfig {
+                address: "a".into(),
+                port: 1,
+                uuid: "u".into(),
+                password: "p".into(),
+                sni: None,
+                congestion: None,
+            }),
+        ];
+
+        for protocol in cases {
+            let outbound = create(&profile(protocol)).expect("outbound is created");
+            assert!(outbound.name().starts_with("test:"));
+            assert!(outbound.name().len() > 5);
+        }
+    }
+}

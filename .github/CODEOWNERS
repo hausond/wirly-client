@@ -1,0 +1,12 @@
+# Владельцы кода. Требуется ревью указанных владельцев.
+
+*                       @hausond
+
+# Критичные зоны — обязательное ревью владельца
+/crates/vpn-proto/      @hausond
+/crates/vpn-tun/        @hausond
+/docs/09-security.md    @hausond
+/docs/adr/              @hausond
+/.github/               @hausond
+/deny.toml              @hausond
+/Cargo.toml             @hausond

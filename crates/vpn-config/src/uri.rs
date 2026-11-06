@@ -105,36 +105,48 @@ fn parse_trojan(rest: &str) -> Result<Profile, ConfigError> {
 fn parse_ss(rest: &str) -> Result<Profile, ConfigError> {
     // SIP002: ss://base64(method:password)@host:port
     // Legacy: ss://base64(method:password@host:port)
-    if !rest.contains('@') {
-        let decoded = decode_base64(rest.split('#').next().unwrap_or(rest))?;
-        return parse_ss(&format!(
-            "{}#{}",
-            decoded,
-            rest.split('#').nth(1).unwrap_or("")
-        ));
-    }
-
-    let url =
-        Url::parse(&format!("ss://{rest}")).map_err(|e| ConfigError::InvalidUri(e.to_string()))?;
-    let userinfo = percent_decode(url.username());
-    let decoded = match decode_base64(&userinfo) {
-        Ok(v) => v,
-        Err(_) => userinfo, // already plain "method:password"
+    let (body, fragment) = match rest.split_once('#') {
+        Some((b, f)) => (b, Some(f)),
+        None => (rest, None),
     };
-    let (method, password) = decoded
+
+    let (credentials, host_port) = match body.rsplit_once('@') {
+        Some((userinfo, host_port)) => {
+            let decoded = percent_decode(userinfo);
+            let credentials = decode_base64(&decoded).unwrap_or(decoded);
+            (credentials, host_port.to_string())
+        }
+        None => {
+            let decoded = decode_base64(body)?;
+            let (credentials, host_port) = decoded
+                .rsplit_once('@')
+                .ok_or(ConfigError::MissingField("method:password@host:port"))?;
+            (credentials.to_string(), host_port.to_string())
+        }
+    };
+
+    let (method, password) = credentials
         .split_once(':')
         .ok_or(ConfigError::MissingField("method:password"))?;
 
+    let url = Url::parse(&format!("ss://x@{host_port}"))
+        .map_err(|e| ConfigError::InvalidUri(e.to_string()))?;
+    let address = url
+        .host_str()
+        .ok_or(ConfigError::MissingField("address"))?
+        .to_string();
+    let port = url.port().ok_or(ConfigError::MissingField("port"))?;
+
     let cfg = ShadowsocksConfig {
-        address: url
-            .host_str()
-            .ok_or(ConfigError::MissingField("address"))?
-            .to_string(),
-        port: url.port().ok_or(ConfigError::MissingField("port"))?,
+        address: address.clone(),
+        port,
         method: method.to_string(),
         password: password.to_string(),
     };
-    let name = profile_name(&url, &format!("ss-{}", cfg.address));
+    let name = fragment
+        .map(percent_decode)
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| format!("ss-{address}"));
     Ok(Profile::new(name, ProtocolConfig::Shadowsocks(cfg)))
 }
 
@@ -296,6 +308,69 @@ mod tests {
         assert!(matches!(
             parse_uri("vmess://abc"),
             Err(ConfigError::UnsupportedScheme(_))
+        ));
+    }
+
+    #[test]
+    fn parses_hysteria2_with_obfs() {
+        let uri = "hysteria2://secret@example.com:443?sni=example.com&obfs=salamander&obfs-password=pw&insecure=1#hy";
+        match parse_uri(uri).unwrap().protocol {
+            ProtocolConfig::Hysteria2(c) => {
+                assert_eq!(c.password, "secret");
+                assert_eq!(c.sni.as_deref(), Some("example.com"));
+                assert_eq!(c.obfs.as_deref(), Some("salamander"));
+                assert_eq!(c.obfs_password.as_deref(), Some("pw"));
+                assert!(c.insecure);
+            }
+            other => panic!("unexpected protocol: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_legacy_ss() {
+        let payload =
+            base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pw@example.com:8388");
+        match parse_uri(&format!("ss://{payload}#legacy"))
+            .unwrap()
+            .protocol
+        {
+            ProtocolConfig::Shadowsocks(c) => {
+                assert_eq!(c.address, "example.com");
+                assert_eq!(c.port, 8388);
+                assert_eq!(c.method, "aes-256-gcm");
+                assert_eq!(c.password, "pw");
+            }
+            other => panic!("unexpected protocol: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn decodes_percent_encoded_profile_name() {
+        let profile = parse_uri("trojan://pw@example.com:443#my%20node").unwrap();
+        assert_eq!(profile.name, "my node");
+    }
+
+    #[test]
+    fn rejects_vless_without_uuid() {
+        assert!(matches!(
+            parse_uri("vless://example.com:443?security=tls"),
+            Err(ConfigError::MissingField("uuid"))
+        ));
+    }
+
+    #[test]
+    fn rejects_vless_without_port() {
+        assert!(matches!(
+            parse_uri("vless://uuid@example.com"),
+            Err(ConfigError::MissingField("port"))
+        ));
+    }
+
+    #[test]
+    fn rejects_invalid_base64() {
+        assert!(matches!(
+            parse_uri("ss://!!!@example.com:1"),
+            Err(ConfigError::MissingField(_))
         ));
     }
 }

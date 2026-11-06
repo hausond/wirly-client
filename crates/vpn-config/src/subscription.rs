@@ -39,4 +39,17 @@ mod tests {
         let profiles = parse_subscription(body).unwrap();
         assert_eq!(profiles.len(), 1);
     }
+
+    #[test]
+    fn skips_comments_and_blank_lines() {
+        let body = "# comment\n\n// another\nvless://u@1.2.3.4:443#a\n";
+        let profiles = parse_subscription(body).unwrap();
+        assert_eq!(profiles.len(), 1);
+        assert_eq!(profiles[0].name, "a");
+    }
+
+    #[test]
+    fn propagates_invalid_line() {
+        assert!(parse_subscription("not a link").is_err());
+    }
 }

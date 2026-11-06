@@ -160,4 +160,56 @@ mod tests {
         let mut s = Session::new();
         assert!(matches!(s.mark_connected(), Err(SessionError::NoProfile)));
     }
+
+    #[test]
+    fn given_disconnected_when_disconnecting_then_invalid_transition() {
+        let mut s = Session::new();
+        assert!(matches!(
+            s.begin_disconnect(),
+            Err(SessionError::InvalidTransition(SessionState::Disconnected))
+        ));
+    }
+
+    #[test]
+    fn given_connected_when_connecting_again_then_rejected() {
+        let mut s = Session::new();
+        s.begin_connect(profile()).unwrap();
+        s.mark_connected().unwrap();
+        assert!(matches!(
+            s.begin_connect(profile()),
+            Err(SessionError::InvalidTransition(SessionState::Connected))
+        ));
+        assert!(s.state().is_active());
+    }
+
+    #[test]
+    fn given_connecting_when_marking_connected_twice_then_rejected() {
+        let mut s = Session::new();
+        s.begin_connect(profile()).unwrap();
+        s.mark_connected().unwrap();
+        assert!(matches!(
+            s.mark_connected(),
+            Err(SessionError::InvalidTransition(SessionState::Connected))
+        ));
+    }
+
+    #[test]
+    fn given_failed_session_when_reconnecting_then_allowed() {
+        let mut s = Session::new();
+        s.begin_connect(profile()).unwrap();
+        s.fail("handshake timeout");
+        assert!(matches!(s.state(), SessionState::Failed { .. }));
+        assert!(!s.state().is_active());
+        s.begin_connect(profile()).unwrap();
+        assert_eq!(*s.state(), SessionState::Connecting);
+    }
+
+    #[test]
+    fn traffic_counters_saturate() {
+        let mut s = Session::new();
+        s.add_traffic(u64::MAX, 0);
+        s.add_traffic(10, 5);
+        assert_eq!(s.stats().up_bytes, u64::MAX);
+        assert_eq!(s.stats().down_bytes, 5);
+    }
 }

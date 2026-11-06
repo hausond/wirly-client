@@ -11,3 +11,6 @@ vpn-proto = { path = "../vpn-proto" }
 serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+
+[lints]
+workspace = true

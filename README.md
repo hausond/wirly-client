@@ -46,6 +46,26 @@ Toolchain: `stable-x86_64-pc-windows-gnu` + MSYS2 UCRT64 (`gcc`, `ld` в PATH).
 Демо-запуск печатает загруженные пресеты, решения роутера по тестовым соединениям,
 разбор share-ссылки, состояние сессии и выдачу fake-IP.
 
+## Процессы и стандарты
+
+Вся нормативная база — в [`docs/`](docs/README.md). Обязательно к прочтению:
+
+- [`docs/00-charter.md`](docs/00-charter.md) — рамки проекта;
+- [`docs/02-code-standards.md`](docs/02-code-standards.md) — как писать код;
+- [`docs/03-testing.md`](docs/03-testing.md) — покрытие 100%;
+- [`docs/05-quality-gates.md`](docs/05-quality-gates.md) — гейты;
+- [`docs/06-agent-playbook.md`](docs/06-agent-playbook.md) — регламент для ИИ-агентов.
+
+Локальные проверки:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check.ps1
+```
+
+CI (`.github/workflows/ci.yml`) обязателен: `fmt`, `clippy`, `test`, `coverage`,
+`docs`, `deny`, `audit`, `msrv`. Обход гейтов запрещён.
+
 ## Дорожная карта
 
 - **Фаза 0** — каркас, модели, движок правил, пресеты, тесты. ← текущее состояние

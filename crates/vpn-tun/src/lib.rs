@@ -47,6 +47,7 @@ pub trait TunDevice: Send + Sync {
 }
 
 /// Placeholder used until the wintun backend is wired up.
+#[derive(Debug)]
 pub struct NullTun;
 
 #[async_trait]
@@ -61,5 +62,38 @@ impl TunDevice for NullTun {
 
     async fn write_packet(&self, _packet: &[u8]) -> Result<usize, TunError> {
         Err(TunError::NotImplemented)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn given_default_config_then_sane_values() {
+        let cfg = TunConfig::default();
+        assert_eq!(cfg.name, "hausond");
+        assert_eq!(cfg.mtu, 1400);
+        assert!(cfg.address.contains('/'));
+    }
+
+    #[tokio::test]
+    async fn given_null_tun_when_reading_then_not_implemented() {
+        let tun = NullTun;
+        assert_eq!(tun.name(), "null");
+        let mut buf = [0u8; 4];
+        assert!(matches!(
+            tun.read_packet(&mut buf).await,
+            Err(TunError::NotImplemented)
+        ));
+    }
+
+    #[tokio::test]
+    async fn given_null_tun_when_writing_then_not_implemented() {
+        let tun = NullTun;
+        assert!(matches!(
+            tun.write_packet(&[1, 2, 3]).await,
+            Err(TunError::NotImplemented)
+        ));
     }
 }

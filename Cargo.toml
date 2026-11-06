@@ -37,3 +37,20 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 lto = "thin"
 codegen-units = 1
 strip = true
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "deny", priority = -1 }
+unused_must_use = "deny"
+missing_debug_implementations = "warn"
+# Temporary exception until M1: public API docs are enforced by review.
+missing_docs = "allow"
+
+[workspace.lints.clippy]
+all = "deny"
+correctness = "deny"
+suspicious = "deny"
+complexity = "deny"
+perf = "deny"
+# Temporary exception until M2: tighten pedantic incrementally.
+pedantic = "allow"

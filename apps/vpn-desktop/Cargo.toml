@@ -7,3 +7,6 @@ license.workspace = true
 [dependencies]
 vpn-ipc = { path = "../../crates/vpn-ipc" }
 anyhow.workspace = true
+
+[lints]
+workspace = true
