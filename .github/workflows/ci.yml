@@ -88,7 +88,22 @@ jobs:
         shell: pwsh
         run: |
           cargo llvm-cov report --text > cov.txt
-          Get-Content cov.txt | Select-String -Pattern '\|\s*0\|' | Select-Object -First 40
+          cargo llvm-cov report --json --show-instantiations=false > cov.json
+          $j = Get-Content cov.json -Raw | ConvertFrom-Json
+          $seen = @{}
+          foreach ($f in $j.data[0].files) {
+            foreach ($s in $f.segments) {
+              if ($s.Count -ge 5 -and $s[3] -eq 1 -and $s[2] -eq 0 -and $s[4] -eq 1) {
+                $n = [int]$s[0]
+                $key = "$($f.filename):$n"
+                if (-not $seen.ContainsKey($key)) {
+                  $seen[$key] = $true
+                  $src = (Get-Content $f.filename)[$n - 1]
+                  Write-Host "$($f.filename):$n $($src.Trim())"
+                }
+              }
+            }
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -97,6 +112,7 @@ jobs:
             lcov.info
             coverage-summary.txt
             cov.txt
+            cov.json
           if-no-files-found: warn
 
   docs:
