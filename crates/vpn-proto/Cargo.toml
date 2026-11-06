@@ -1,0 +1,11 @@
+[package]
+name = "vpn-proto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+vpn-config = { path = "../vpn-config" }
+thiserror.workspace = true
+tokio.workspace = true
+async-trait.workspace = true

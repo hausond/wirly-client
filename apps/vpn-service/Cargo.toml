@@ -1,0 +1,12 @@
+[package]
+name = "vpn-service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+vpn-config = { path = "../../crates/vpn-config" }
+vpn-routing = { path = "../../crates/vpn-routing" }
+vpn-core = { path = "../../crates/vpn-core" }
+vpn-dns = { path = "../../crates/vpn-dns" }
+anyhow.workspace = true

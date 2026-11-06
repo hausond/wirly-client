@@ -1,0 +1,38 @@
+{
+  "name": "Bypass RU",
+  "description": "RU-сайты и игры напрямую, остальное через туннель",
+  "default_action": { "proxy": "default" },
+  "rules": [
+    { "match": { "type": "ip", "cidr": "127.0.0.0/8" }, "action": "direct", "note": "loopback" },
+    { "match": { "type": "ip", "cidr": "10.0.0.0/8" }, "action": "direct", "note": "LAN" },
+    { "match": { "type": "ip", "cidr": "172.16.0.0/12" }, "action": "direct", "note": "LAN" },
+    { "match": { "type": "ip", "cidr": "192.168.0.0/16" }, "action": "direct", "note": "LAN" },
+
+    { "match": { "type": "process", "name": "Wow.exe" }, "action": "direct", "note": "игра" },
+    { "match": { "type": "process", "name": "WowClassic.exe" }, "action": "direct" },
+    { "match": { "type": "process", "name": "Battle.net.exe" }, "action": "direct" },
+    { "match": { "type": "process", "name": "Agent.exe" }, "action": "direct" },
+    { "match": { "type": "process", "name": "steam.exe" }, "action": "direct" },
+    { "match": { "type": "process", "name": "steamwebhelper.exe" }, "action": "direct" },
+
+    { "match": { "type": "domain", "value": "ru", "mode": "suffix" }, "action": "direct", "note": "RU TLD" },
+    { "match": { "type": "domain", "value": "рф", "mode": "suffix" }, "action": "direct", "note": "RU TLD" },
+    { "match": { "type": "domain", "value": "su", "mode": "suffix" }, "action": "direct", "note": "RU TLD" },
+
+    { "match": { "type": "domain", "value": "yandex.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "yandex.net", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "vk.com", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "vk.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "mail.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "max.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "oneme.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "ozon.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "wildberries.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "avito.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "sberbank.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "gosuslugi.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "rutube.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "kinopoisk.ru", "mode": "suffix" }, "action": "direct" },
+    { "match": { "type": "domain", "value": "2ip.ru", "mode": "suffix" }, "action": "direct" }
+  ]
+}

@@ -1,0 +1,9 @@
+[package]
+name = "vpn-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+vpn-ipc = { path = "../../crates/vpn-ipc" }
+anyhow.workspace = true

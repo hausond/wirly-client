@@ -1,0 +1,4 @@
+# Local toolchain is stable-x86_64-pc-windows-gnu, linking through MSYS2 UCRT64.
+# Adjust the path if MSYS2 lives elsewhere.
+[target.x86_64-pc-windows-gnu]
+linker = "C:/msys64/ucrt64/bin/x86_64-w64-mingw32-gcc.exe"

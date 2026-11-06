@@ -1,0 +1,21 @@
+{
+  "name": "Work/AI",
+  "description": "Всё напрямую, кроме AI-сервисов и git-хостингов — они через туннель",
+  "default_action": "direct",
+  "rules": [
+    { "match": { "type": "domain", "value": "openai.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "chatgpt.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "anthropic.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "claude.ai", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "gemini.google.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "github.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "githubusercontent.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "gitlab.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "crates.io", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "docker.io", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "telegram.org", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "discord.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "youtube.com", "mode": "suffix" }, "action": { "proxy": "default" } },
+    { "match": { "type": "domain", "value": "googlevideo.com", "mode": "suffix" }, "action": { "proxy": "default" } }
+  ]
+}

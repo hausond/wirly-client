@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/vpn-config",
+    "crates/vpn-routing",
+    "crates/vpn-proto",
+    "crates/vpn-core",
+    "crates/vpn-dns",
+    "crates/vpn-tun",
+    "crates/vpn-ipc",
+    "apps/vpn-service",
+    "apps/vpn-desktop",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+rust-version = "1.80"
+authors = ["hausond"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+url = "2"
+base64 = "0.22"
+uuid = { version = "1", features = ["v4", "serde"] }
+ipnet = "2"
+tokio = { version = "1", features = ["rt", "net", "sync", "time", "macros"] }
+async-trait = "0.1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

@@ -1,0 +1,13 @@
+[package]
+name = "vpn-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+vpn-config = { path = "../vpn-config" }
+vpn-routing = { path = "../vpn-routing" }
+vpn-proto = { path = "../vpn-proto" }
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

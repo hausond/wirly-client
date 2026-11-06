@@ -1,0 +1,10 @@
+[package]
+name = "vpn-ipc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+vpn-config = { path = "../vpn-config" }
+vpn-core = { path = "../vpn-core" }
+serde.workspace = true
