@@ -419,4 +419,13 @@ mod tests {
             Err(ConfigError::MissingField("port"))
         ));
     }
+
+    #[test]
+    fn rejects_urls_with_empty_host() {
+        for uri in ["vless://u@:443", "trojan://pw@:443", "hysteria2://pw@:443"] {
+            assert!(parse_uri(uri).is_err(), "expected error for {uri}");
+        }
+        let payload = base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pass");
+        assert!(parse_uri(&format!("ss://{payload}@:443")).is_err());
+    }
 }
