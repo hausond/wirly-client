@@ -59,61 +59,19 @@ jobs:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-llvm-cov
-      - name: 100% line coverage for library crates
-        run: >
-          cargo llvm-cov --workspace
-          --exclude vpn-service --exclude vpn-desktop
-          --fail-under-lines 100
-          --lcov --output-path lcov.info
-      - name: coverage summary
-        if: always()
+      - name: 100% line coverage per crate
         shell: pwsh
         run: |
-          if (-not (Test-Path lcov.info)) { Write-Host "lcov.info not found"; exit 0 }
-          $lf = 0; $lh = 0; $file = $null; $missed = @()
-          foreach ($line in Get-Content lcov.info) {
-            $line = $line.Trim()
-            if ($line -match '^SF:(.+)$') { $file = $Matches[1] }
-            elseif ($line -match '^LF:(\d+)') { $lf += [int]$Matches[1] }
-            elseif ($line -match '^LH:(\d+)') { $lh += [int]$Matches[1] }
-            elseif ($line -match '^DA:(\d+),0$') { $missed += "$file`:$($Matches[1])" }
+          $failed = @()
+          foreach ($p in @('vpn-config','vpn-routing','vpn-dns','vpn-core','vpn-proto','vpn-tun')) {
+            Write-Host "==> $p"
+            cargo llvm-cov -p $p --fail-under-lines 100
+            if ($LASTEXITCODE -ne 0) { $failed += $p }
           }
-          $pct = if ($lf -gt 0) { [math]::Round(100.0 * $lh / $lf, 2) } else { 0 }
-          Write-Host "coverage: $lh / $lf lines = $pct%"
-          Write-Host "uncovered lines (first 80):"
-          $missed | Select-Object -First 80
-          "coverage=$pct%" | Out-File -FilePath coverage-summary.txt -Encoding utf8
-      - name: uncovered lines (text report)
-        if: failure()
-        shell: pwsh
-        run: |
-          cargo llvm-cov report --text > cov.txt
-          cargo llvm-cov report --json --show-instantiations=false > cov.json
-          $j = Get-Content cov.json -Raw | ConvertFrom-Json
-          $seen = @{}
-          foreach ($f in $j.data[0].files) {
-            foreach ($s in $f.segments) {
-              if ($s.Count -ge 5 -and $s[3] -eq 1 -and $s[2] -eq 0 -and $s[4] -eq 1) {
-                $n = [int]$s[0]
-                $key = "$($f.filename):$n"
-                if (-not $seen.ContainsKey($key)) {
-                  $seen[$key] = $true
-                  $src = (Get-Content $f.filename)[$n - 1]
-                  Write-Host "$($f.filename):$n $($src.Trim())"
-                }
-              }
-            }
+          if ($failed.Count -gt 0) {
+            Write-Host "FAILED: $($failed -join ', ')"
+            exit 1
           }
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: |
-            lcov.info
-            coverage-summary.txt
-            cov.txt
-            cov.json
-          if-no-files-found: warn
 
   docs:
     name: docs
