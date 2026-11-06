@@ -302,6 +302,10 @@ mod tests {
         let c = profile.protocol.as_shadowsocks().unwrap();
         assert_eq!(c.method, "aes-256-gcm");
         assert_eq!(c.password, "pass");
+
+        let unnamed = format!("ss://{userinfo}@example.com:8388");
+        let profile = parse_uri(&unnamed).unwrap();
+        assert_eq!(profile.name, "ss-example.com");
     }
 
     #[test]
