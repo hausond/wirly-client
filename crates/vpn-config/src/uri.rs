@@ -249,58 +249,111 @@ mod tests {
         let uri = "vless://98d47ea6-7c92-4693-aff2-4b2a381c71de@91.192.157.137:443?type=ws&path=%2Fws-50ada98a&security=tls&sni=91.192.157.137&host=91.192.157.137&fp=chrome#vpn-Nikita-ws";
         let profile = parse_uri(uri).unwrap();
         assert_eq!(profile.name, "vpn-Nikita-ws");
-        match profile.protocol {
-            ProtocolConfig::Vless(c) => {
-                assert_eq!(c.address, "91.192.157.137");
-                assert_eq!(c.port, 443);
-                assert_eq!(c.uuid, "98d47ea6-7c92-4693-aff2-4b2a381c71de");
-                assert_eq!(c.network, Transport::Ws);
-                assert_eq!(c.security, Security::Tls);
-                assert_eq!(c.path.as_deref(), Some("/ws-50ada98a"));
-                assert_eq!(c.fingerprint.as_deref(), Some("chrome"));
-            }
-            other => panic!("unexpected protocol: {other:?}"),
+        let c = profile.protocol.as_vless().expect("vless");
+        assert_eq!(c.address, "91.192.157.137");
+        assert_eq!(c.port, 443);
+        assert_eq!(c.uuid, "98d47ea6-7c92-4693-aff2-4b2a381c71de");
+        assert_eq!(c.network, Transport::Ws);
+        assert_eq!(c.security, Security::Tls);
+        assert_eq!(c.path.as_deref(), Some("/ws-50ada98a"));
+        assert_eq!(c.fingerprint.as_deref(), Some("chrome"));
+    }
+
+    #[test]
+    fn parses_vless_grpc_and_xhttp_transports() {
+        for (kind, expected) in [("grpc", Transport::Grpc), ("xhttp", Transport::Xhttp)] {
+            let uri = format!("vless://u@1.2.3.4:443?type={kind}#t");
+            let profile = parse_uri(&uri).unwrap();
+            assert_eq!(profile.protocol.as_vless().unwrap().network, expected);
         }
     }
 
     #[test]
     fn parses_vless_reality() {
         let uri = "vless://uuid@1.2.3.4:443?security=reality&sni=www.microsoft.com&pbk=PUB&sid=abcd&flow=xtls-rprx-vision#reality";
-        match parse_uri(uri).unwrap().protocol {
-            ProtocolConfig::Vless(c) => {
-                assert_eq!(c.security, Security::Reality);
-                assert_eq!(c.public_key.as_deref(), Some("PUB"));
-                assert_eq!(c.short_id.as_deref(), Some("abcd"));
-                assert_eq!(c.flow.as_deref(), Some("xtls-rprx-vision"));
-            }
-            other => panic!("unexpected protocol: {other:?}"),
-        }
+        let profile = parse_uri(uri).unwrap();
+        let c = profile.protocol.as_vless().unwrap();
+        assert_eq!(c.security, Security::Reality);
+        assert_eq!(c.public_key.as_deref(), Some("PUB"));
+        assert_eq!(c.short_id.as_deref(), Some("abcd"));
+        assert_eq!(c.flow.as_deref(), Some("xtls-rprx-vision"));
     }
 
     #[test]
     fn parses_trojan() {
         let uri = "trojan://secret@example.com:443?sni=example.com&type=ws&path=%2Ft#node";
-        match parse_uri(uri).unwrap().protocol {
-            ProtocolConfig::Trojan(c) => {
-                assert_eq!(c.password, "secret");
-                assert_eq!(c.network, Transport::Ws);
-                assert_eq!(c.path.as_deref(), Some("/t"));
-            }
-            other => panic!("unexpected protocol: {other:?}"),
-        }
+        let profile = parse_uri(uri).unwrap();
+        let c = profile.protocol.as_trojan().unwrap();
+        assert_eq!(c.password, "secret");
+        assert_eq!(c.network, Transport::Ws);
+        assert_eq!(c.path.as_deref(), Some("/t"));
+    }
+
+    #[test]
+    fn parses_trojan_grpc_and_rejects_empty_password() {
+        let profile = parse_uri("trojan://pw@example.com:443?type=grpc#t").unwrap();
+        assert_eq!(
+            profile.protocol.as_trojan().unwrap().network,
+            Transport::Grpc
+        );
+        assert!(matches!(
+            parse_uri("trojan://@example.com:443"),
+            Err(ConfigError::MissingField("password"))
+        ));
     }
 
     #[test]
     fn parses_ss_sip002() {
         let userinfo = base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pass");
         let uri = format!("ss://{userinfo}@example.com:8388#ssnode");
-        match parse_uri(&uri).unwrap().protocol {
-            ProtocolConfig::Shadowsocks(c) => {
-                assert_eq!(c.method, "aes-256-gcm");
-                assert_eq!(c.password, "pass");
-            }
-            other => panic!("unexpected protocol: {other:?}"),
-        }
+        let profile = parse_uri(&uri).unwrap();
+        let c = profile.protocol.as_shadowsocks().unwrap();
+        assert_eq!(c.method, "aes-256-gcm");
+        assert_eq!(c.password, "pass");
+    }
+
+    #[test]
+    fn parses_legacy_ss() {
+        let payload =
+            base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pw@example.com:8388");
+        let profile = parse_uri(&format!("ss://{payload}#legacy")).unwrap();
+        let c = profile.protocol.as_shadowsocks().unwrap();
+        assert_eq!(c.address, "example.com");
+        assert_eq!(c.port, 8388);
+        assert_eq!(c.method, "aes-256-gcm");
+        assert_eq!(c.password, "pw");
+    }
+
+    #[test]
+    fn parses_hysteria2_with_obfs() {
+        let uri = "hysteria2://secret@example.com:443?sni=example.com&obfs=salamander&obfs-password=pw&insecure=1#hy";
+        let profile = parse_uri(uri).unwrap();
+        let c = profile.protocol.as_hysteria2().unwrap();
+        assert_eq!(c.password, "secret");
+        assert_eq!(c.sni.as_deref(), Some("example.com"));
+        assert_eq!(c.obfs.as_deref(), Some("salamander"));
+        assert_eq!(c.obfs_password.as_deref(), Some("pw"));
+        assert!(c.insecure);
+    }
+
+    #[test]
+    fn rejects_hysteria2_without_password() {
+        assert!(matches!(
+            parse_uri("hysteria2://@example.com:443"),
+            Err(ConfigError::MissingField("password"))
+        ));
+    }
+
+    #[test]
+    fn decodes_percent_escapes_in_names() {
+        let profile = parse_uri("trojan://pw@example.com:443#a%2fb%41c").unwrap();
+        assert_eq!(profile.name, "a/bAc");
+
+        let profile = parse_uri("trojan://pw@example.com:443#bad%zz").unwrap();
+        assert_eq!(profile.name, "bad%zz");
+
+        let profile = parse_uri("trojan://pw@example.com:443#tail%").unwrap();
+        assert_eq!(profile.name, "tail%");
     }
 
     #[test]
@@ -309,45 +362,6 @@ mod tests {
             parse_uri("vmess://abc"),
             Err(ConfigError::UnsupportedScheme(_))
         ));
-    }
-
-    #[test]
-    fn parses_hysteria2_with_obfs() {
-        let uri = "hysteria2://secret@example.com:443?sni=example.com&obfs=salamander&obfs-password=pw&insecure=1#hy";
-        match parse_uri(uri).unwrap().protocol {
-            ProtocolConfig::Hysteria2(c) => {
-                assert_eq!(c.password, "secret");
-                assert_eq!(c.sni.as_deref(), Some("example.com"));
-                assert_eq!(c.obfs.as_deref(), Some("salamander"));
-                assert_eq!(c.obfs_password.as_deref(), Some("pw"));
-                assert!(c.insecure);
-            }
-            other => panic!("unexpected protocol: {other:?}"),
-        }
-    }
-
-    #[test]
-    fn parses_legacy_ss() {
-        let payload =
-            base64::engine::general_purpose::STANDARD.encode("aes-256-gcm:pw@example.com:8388");
-        match parse_uri(&format!("ss://{payload}#legacy"))
-            .unwrap()
-            .protocol
-        {
-            ProtocolConfig::Shadowsocks(c) => {
-                assert_eq!(c.address, "example.com");
-                assert_eq!(c.port, 8388);
-                assert_eq!(c.method, "aes-256-gcm");
-                assert_eq!(c.password, "pw");
-            }
-            other => panic!("unexpected protocol: {other:?}"),
-        }
-    }
-
-    #[test]
-    fn decodes_percent_encoded_profile_name() {
-        let profile = parse_uri("trojan://pw@example.com:443#my%20node").unwrap();
-        assert_eq!(profile.name, "my node");
     }
 
     #[test]
@@ -367,7 +381,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_invalid_base64() {
+    fn rejects_ss_without_credentials() {
         assert!(matches!(
             parse_uri("ss://!!!@example.com:1"),
             Err(ConfigError::MissingField(_))

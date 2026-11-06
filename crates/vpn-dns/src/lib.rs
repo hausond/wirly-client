@@ -121,4 +121,17 @@ mod tests {
         assert!(!FakeIpPool::is_fake("8.8.8.8".parse().unwrap()));
         assert!(!FakeIpPool::is_fake("::1".parse().unwrap()));
     }
+
+    #[test]
+    fn given_default_pool_then_empty() {
+        let pool = FakeIpPool::default();
+        assert!(pool.is_empty());
+        assert_eq!(pool.len(), 0);
+    }
+
+    #[test]
+    fn given_ipv6_when_looking_up_then_none() {
+        let pool = FakeIpPool::new();
+        assert!(pool.domain_for("::1".parse().unwrap()).is_none());
+    }
 }

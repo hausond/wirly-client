@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-vpn-config = { path = "../vpn-config" }
+vpn-config = { path = "../vpn-config", version = "0.1.0" }
 thiserror.workspace = true
 tokio.workspace = true
 async-trait.workspace = true

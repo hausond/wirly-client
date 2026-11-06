@@ -356,4 +356,30 @@ mod tests {
         let again = Preset::from_json(&json).unwrap();
         assert_eq!(preset, again);
     }
+
+    #[test]
+    fn given_preset_then_rule_count_is_reported() {
+        assert_eq!(engine().rule_count(), 4);
+    }
+
+    #[test]
+    fn given_port_rule_when_connection_uses_port_then_matched() {
+        let preset = Preset {
+            name: "port".into(),
+            description: String::new(),
+            default_action: Action::Block,
+            rules: vec![Rule {
+                matcher: Matcher::Port { value: 443 },
+                action: Action::Direct,
+                note: None,
+            }],
+        };
+        let e = RoutingEngine::new(&preset).unwrap();
+        let ip: IpAddr = "1.1.1.1".parse().unwrap();
+        assert_eq!(
+            e.decide(&ConnectionInfo::tcp(ip, 443)).action,
+            Action::Direct
+        );
+        assert_eq!(e.decide(&ConnectionInfo::tcp(ip, 80)).action, Action::Block);
+    }
 }

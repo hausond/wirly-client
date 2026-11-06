@@ -35,6 +35,56 @@ pub enum ProtocolConfig {
     Tuic(TuicConfig),
 }
 
+impl ProtocolConfig {
+    /// Returns the VLESS settings if this profile uses VLESS.
+    pub fn as_vless(&self) -> Option<&VlessConfig> {
+        match self {
+            ProtocolConfig::Vless(config) => Some(config),
+            _ => None,
+        }
+    }
+
+    /// Returns the Trojan settings if this profile uses Trojan.
+    pub fn as_trojan(&self) -> Option<&TrojanConfig> {
+        match self {
+            ProtocolConfig::Trojan(config) => Some(config),
+            _ => None,
+        }
+    }
+
+    /// Returns the Shadowsocks settings if this profile uses Shadowsocks.
+    pub fn as_shadowsocks(&self) -> Option<&ShadowsocksConfig> {
+        match self {
+            ProtocolConfig::Shadowsocks(config) => Some(config),
+            _ => None,
+        }
+    }
+
+    /// Returns the WireGuard settings if this profile uses WireGuard.
+    pub fn as_wireguard(&self) -> Option<&WireGuardConfig> {
+        match self {
+            ProtocolConfig::WireGuard(config) => Some(config),
+            _ => None,
+        }
+    }
+
+    /// Returns the Hysteria2 settings if this profile uses Hysteria2.
+    pub fn as_hysteria2(&self) -> Option<&Hysteria2Config> {
+        match self {
+            ProtocolConfig::Hysteria2(config) => Some(config),
+            _ => None,
+        }
+    }
+
+    /// Returns the TUIC settings if this profile uses TUIC.
+    pub fn as_tuic(&self) -> Option<&TuicConfig> {
+        match self {
+            ProtocolConfig::Tuic(config) => Some(config),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Transport {
@@ -141,4 +191,99 @@ pub struct TuicConfig {
     pub sni: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub congestion: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn vless() -> ProtocolConfig {
+        ProtocolConfig::Vless(VlessConfig {
+            address: "a".into(),
+            port: 1,
+            uuid: "u".into(),
+            flow: None,
+            network: Transport::Tcp,
+            security: Security::None,
+            sni: None,
+            host: None,
+            path: None,
+            public_key: None,
+            short_id: None,
+            fingerprint: None,
+        })
+    }
+
+    #[test]
+    fn given_vless_when_querying_accessors_then_only_vless_matches() {
+        let config = vless();
+        assert!(config.as_vless().is_some());
+        assert!(config.as_trojan().is_none());
+        assert!(config.as_shadowsocks().is_none());
+        assert!(config.as_wireguard().is_none());
+        assert!(config.as_hysteria2().is_none());
+        assert!(config.as_tuic().is_none());
+    }
+
+    #[test]
+    fn given_other_protocols_when_querying_accessors_then_matching_variant_is_some() {
+        let trojan = ProtocolConfig::Trojan(TrojanConfig {
+            address: "a".into(),
+            port: 1,
+            password: "p".into(),
+            sni: None,
+            network: Transport::Tcp,
+            path: None,
+        });
+        assert!(trojan.as_trojan().is_some());
+
+        let ss = ProtocolConfig::Shadowsocks(ShadowsocksConfig {
+            address: "a".into(),
+            port: 1,
+            method: "m".into(),
+            password: "p".into(),
+        });
+        assert!(ss.as_shadowsocks().is_some());
+
+        let wg = ProtocolConfig::WireGuard(WireGuardConfig {
+            endpoint: "e".into(),
+            port: 1,
+            private_key: "k".into(),
+            peer_public_key: "p".into(),
+            preshared_key: None,
+            address: "10.0.0.2/32".into(),
+            dns: None,
+            mtu: None,
+        });
+        assert!(wg.as_wireguard().is_some());
+
+        let hy2 = ProtocolConfig::Hysteria2(Hysteria2Config {
+            address: "a".into(),
+            port: 1,
+            password: "p".into(),
+            sni: None,
+            obfs: None,
+            obfs_password: None,
+            insecure: false,
+        });
+        assert!(hy2.as_hysteria2().is_some());
+
+        let tuic = ProtocolConfig::Tuic(TuicConfig {
+            address: "a".into(),
+            port: 1,
+            uuid: "u".into(),
+            password: "p".into(),
+            sni: None,
+            congestion: None,
+        });
+        assert!(tuic.as_tuic().is_some());
+    }
+
+    #[test]
+    fn given_profile_when_serialized_then_roundtrips() {
+        let profile = Profile::new("node", vless());
+        let json = serde_json::to_string(&profile).unwrap();
+        let restored: Profile = serde_json::from_str(&json).unwrap();
+        assert_eq!(profile, restored);
+    }
 }
