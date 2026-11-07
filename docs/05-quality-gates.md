@@ -43,7 +43,7 @@ cargo test --workspace
 | `fmt` | `cargo fmt --all -- --check` | 0 диффов |
 | `clippy` | `cargo clippy --workspace --all-targets -- -D warnings` | 0 warning |
 | `test` | `cargo test --workspace --all-features` | 0 падений |
-| `coverage` | `cargo llvm-cov ... --fail-under-lines 100` | 100% строк |
+| `coverage` | `cargo llvm-cov -p <crate> --fail-under-lines 100` для каждого крейта | 100% строк |
 | `docs` | `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` | 0 warning |
 | `deny` | `cargo deny check` | 0 нарушений |
 | `audit` | `cargo audit` | 0 уязвимостей (кроме allow-list с сроком) |
@@ -58,6 +58,10 @@ cargo test --workspace
 - `crates/**` — 100% строк.
 - Изменённые строки в PR — 100% (patch coverage).
 - Бинарники исключены из подсчёта, но покрыты интеграционными тестами.
+- Гейт выполняется **по каждому крейту отдельно**
+  (`cargo llvm-cov -p <crate> --fail-under-lines 100`): это исключает
+  кросс-крейтовые артефакты мульти-инстанцирования. `vpn-ipc` не содержит
+  исполняемых строк и в цикл не входит.
 - Исключения — только по [правилам](03-testing.md#6-исключения-из-покрытия).
 - Локально на gnu-тулчейне coverage не инструментируется — гейт выполняет CI (MSVC);
   `scripts/check.ps1` в этом случае показывает `SKIP` с пояснением.

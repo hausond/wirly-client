@@ -1,5 +1,7 @@
 # vpn-client
 
+[![ci](https://github.com/hausond/wirly-client/actions/workflows/ci.yml/badge.svg)](https://github.com/hausond/wirly-client/actions/workflows/ci.yml)
+
 Кроссплатформенный (в перспективе) VPN-клиент на Rust. Первая цель — Windows.
 
 ## Почему так
